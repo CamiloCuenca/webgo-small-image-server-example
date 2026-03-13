@@ -1,0 +1,143 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+
+    font-family: "Segoe UI", system-ui, sans-serif;
+
+    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    color:white;
+}
+
+
+/* NAVBAR */
+
+#nav1{
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+
+    padding:25px;
+
+    text-align:center;
+
+    border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+#nav1 h1{
+    font-weight:700;
+    letter-spacing:2px;
+}
+
+
+/* HOSTNAME */
+
+h2{
+    text-align:center;
+    margin:30px;
+    font-weight:300;
+    opacity:0.9;
+}
+
+
+/* GRID DE IMAGENES */
+
+.image-container{
+
+    width:90%;
+    margin:auto;
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+
+    gap:35px;
+
+    padding-bottom:40px;
+}
+
+
+/* CARD DE IMAGEN */
+
+.image-item{
+
+    background: rgba(255,255,255,0.05);
+
+    border-radius:18px;
+
+    padding:15px;
+
+    backdrop-filter: blur(12px);
+
+    border:1px solid rgba(255,255,255,0.08);
+
+    transition: all 0.35s ease;
+
+    box-shadow:
+    0 10px 25px rgba(0,0,0,0.3);
+}
+
+
+/* EFECTO HOVER */
+
+.image-item:hover{
+
+    transform: translateY(-10px) scale(1.03);
+
+    box-shadow:
+    0 20px 40px rgba(0,0,0,0.6);
+}
+
+
+/* IMAGEN */
+
+img{
+
+    width:100%;
+    height:260px;
+
+    object-fit:cover;
+
+    border-radius:12px;
+}
+
+
+/* NOMBRE DE IMAGEN */
+
+p{
+
+    margin-top:12px;
+
+    text-align:center;
+
+    font-size:15px;
+
+    color:#ddd;
+
+    letter-spacing:1px;
+}
+
+
+/* FOOTER */
+
+footer{
+
+    margin-top:auto;
+
+    background: rgba(0,0,0,0.4);
+
+    backdrop-filter: blur(10px);
+
+    padding:20px;
+
+    text-align:center;
+
+    font-size:14px;
+
+    border-top:1px solid rgba(255,255,255,0.1);
+}
