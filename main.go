@@ -1,10 +1,12 @@
 package main
 
 import (
+	"embed"
 	"encoding/base64"
 	"flag"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"math/rand"
 	"net/http"
 	"os"
@@ -13,31 +15,40 @@ import (
 	"time"
 )
 
-var port = flag.String("port", "8000", "Puerto en el que correr el servidor")
+// puerto
+var port = flag.String("port", "8000", "Puerto del servidor")
 
-// estructura para cada imagen
+// EMBED DE ARCHIVOS
+//
+//go:embed index.html
+var htmlFile embed.FS
+
+//go:embed style.css
+var cssFile embed.FS
+
+//go:embed img/*
+var imgFiles embed.FS
+
 type Imagen struct {
 	Nombre string
 	Data   template.URL
 }
 
-// datos enviados al template
 type DatosPagina struct {
 	Titulo   string
 	Host     string
 	Imagenes []Imagen
 }
 
-// Ruta principal
+// ruta principal
 func RutaMain(w http.ResponseWriter, r *http.Request) {
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		fmt.Fprintf(w, "Error al obtener el hostname: %v", err)
+		fmt.Fprintf(w, "Error hostname: %v", err)
 		return
 	}
 
-	// obtener 3 imágenes aleatorias
 	rutas := obtenerImagenesAleatorias(3)
 
 	var imagenes []Imagen
@@ -47,8 +58,6 @@ func RutaMain(w http.ResponseWriter, r *http.Request) {
 		img := imagenABase64(ruta)
 
 		nombre := filepath.Base(ruta)
-
-		fmt.Println("Imagen base64 generada:", len(img))
 
 		imagenes = append(imagenes, Imagen{
 			Nombre: nombre,
@@ -62,67 +71,65 @@ func RutaMain(w http.ResponseWriter, r *http.Request) {
 		Imagenes: imagenes,
 	}
 
-	tmpl := template.Must(template.ParseFiles("index.html"))
+	tmpl := template.Must(template.ParseFS(htmlFile, "index.html"))
 
 	err = tmpl.Execute(w, datos)
 	if err != nil {
-		fmt.Println("Error ejecutando template:", err)
+		fmt.Println("Error template:", err)
 	}
 }
 
-// ruta para hostname
+// ruta hostname
 func getHostname(w http.ResponseWriter, r *http.Request) {
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		fmt.Fprintf(w, "Error al obtener hostname: %v", err)
+		fmt.Fprintf(w, "Error hostname: %v", err)
 		return
 	}
 
 	fmt.Fprintf(w, "Nombre del host: %s", hostname)
 }
 
-// obtener imágenes aleatorias
+// obtener imagenes aleatorias
 func obtenerImagenesAleatorias(cantidad int) []string {
 
-	archivos, err := os.ReadDir("img")
+	archivos, err := fs.ReadDir(imgFiles, "img")
 	if err != nil {
-		fmt.Println("Error leyendo carpeta img:", err)
+		fmt.Println("Error leyendo imágenes:", err)
 		return []string{}
 	}
 
-	var imagenesValidas []string
+	var imagenes []string
 
 	for _, archivo := range archivos {
 
 		ext := strings.ToLower(filepath.Ext(archivo.Name()))
 
 		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" {
-			imagenesValidas = append(imagenesValidas, "img/"+archivo.Name())
+			imagenes = append(imagenes, "img/"+archivo.Name())
 		}
 	}
 
 	rand.Seed(time.Now().UnixNano())
 
-	rand.Shuffle(len(imagenesValidas), func(i, j int) {
-		imagenesValidas[i], imagenesValidas[j] = imagenesValidas[j], imagenesValidas[i]
+	rand.Shuffle(len(imagenes), func(i, j int) {
+		imagenes[i], imagenes[j] = imagenes[j], imagenes[i]
 	})
 
-	if cantidad > len(imagenesValidas) {
-		cantidad = len(imagenesValidas)
+	if cantidad > len(imagenes) {
+		cantidad = len(imagenes)
 	}
 
-	fmt.Println("Imágenes encontradas:", imagenesValidas)
-
-	return imagenesValidas[:cantidad]
+	return imagenes[:cantidad]
 }
 
-// convertir imagen a base64
+// imagen a base64
 func imagenABase64(ruta string) string {
 
-	data, err := os.ReadFile(ruta)
+	data, err := imgFiles.ReadFile(ruta)
 	if err != nil {
-		fmt.Println("Error leyendo imagen:", ruta, err)
+		fmt.Println("Error leyendo imagen:", err)
 		return ""
 	}
 
@@ -139,20 +146,31 @@ func imagenABase64(ruta string) string {
 	return fmt.Sprintf("data:%s;base64,%s", mime, base64Img)
 }
 
+// servir css
+func cssHandler(w http.ResponseWriter, r *http.Request) {
+
+	data, err := cssFile.ReadFile("style.css")
+	if err != nil {
+		http.Error(w, "CSS no encontrado", 404)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/css")
+	w.Write(data)
+}
+
 func main() {
 
 	http.HandleFunc("/", RutaMain)
 	http.HandleFunc("/hostname", getHostname)
-
-	// archivos estáticos
-	http.Handle("/style.css", http.FileServer(http.Dir(".")))
+	http.HandleFunc("/style.css", cssHandler)
 
 	flag.Parse()
 
-	fmt.Println("Servidor corriendo en http://localhost:" + *port)
+	fmt.Println("Servidor en http://localhost:" + *port)
 
 	err := http.ListenAndServe(":"+*port, nil)
 	if err != nil {
-		fmt.Println("Error iniciando servidor:", err)
+		fmt.Println("Error servidor:", err)
 	}
 }
